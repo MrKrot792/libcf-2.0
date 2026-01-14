@@ -1,0 +1,7 @@
+.{
+    .name = .lcf_2_0,
+    .version = "0.0.1",
+    .minimum_zig_version = "0.15.2",
+    .paths = .{""},
+    .fingerprint = 0xe61359cb00cc3e37,
+}
