@@ -4,19 +4,19 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const lib = b.addModule("libcellfrontend", .{
+    const lib = b.addModule("lcf", .{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
     });
 
     const exe = b.addExecutable(.{
-        .name = "libcellfrontend",
+        .name = "lcf",
         .root_module = b.createModule(.{
             .root_source_file = b.path("src/main.zig"),
             .target = target,
             .optimize = optimize,
             .imports = &.{
-                .{ .name = "libcellfrontend", .module = lib },
+                .{ .name = "lcf", .module = lib },
             },
         }),
     });
