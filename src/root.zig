@@ -67,35 +67,29 @@ pub fn grid(comptime grid_size: vec2, comptime cell_type: type) type {
             for (0..grid_size[1]) |y| {
                 for (0..grid_size[0]) |x| {
                     var current_neihbors: [9]?cell_type = @splat(null);
-                    var available_neihbors: [9]bool = @splat(false);
 
-                    available_neihbors[0] = !(y == 0 or x == 0);                  // up+left
-                    available_neihbors[1] = !(y == 0);                            // up
-                    available_neihbors[2] = !(y == 0 or x == (grid_size[0] - 1)); // up+right
-
-                    available_neihbors[3] = !(x == 0);                  // left
-                    available_neihbors[4] = true;                       // center
-                    available_neihbors[5] = !(x == (grid_size[0] - 1)); // right
-
-                    available_neihbors[6] = !(y == (grid_size[1] - 1) or x == 0);                  // down+left
-                    available_neihbors[7] = !(y == (grid_size[1] - 1));                            // down
-                    available_neihbors[8] = !(y == (grid_size[1] - 1) or x == (grid_size[0] - 1)); // down+right
-
-                    if (available_neihbors[0]) current_neihbors[0] = this.data[(y - 1) * grid_size[0] + (x - 1)];
-                    if (available_neihbors[1]) current_neihbors[1] = this.data[(y - 1) * grid_size[0] + (x)];
-                    if (available_neihbors[2]) current_neihbors[2] = this.data[(y - 1) * grid_size[0] + (x + 1)];
-                    if (available_neihbors[3]) current_neihbors[3] = this.data[(y) * grid_size[0] + (x - 1)];
-                    if (available_neihbors[4]) current_neihbors[4] = this.data[(y) * grid_size[0] + (x)];
-                    if (available_neihbors[5]) current_neihbors[5] = this.data[(y) * grid_size[0] + (x + 1)];
-                    if (available_neihbors[6]) current_neihbors[6] = this.data[(y + 1) * grid_size[0] + (x - 1)];
-                    if (available_neihbors[7]) current_neihbors[7] = this.data[(y + 1) * grid_size[0] + (x)];
-                    if (available_neihbors[8]) current_neihbors[8] = this.data[(y + 1) * grid_size[0] + (x + 1)];
+                    var count: u32 = 0;
+                    inline for ([_]i32{-1, 0, 1}) |i| {
+                        inline for ([_]i32{-1, 0, 1}) |j| {
+                            current_neihbors[count] = this.getAt(@as(i32, @intCast(x)) + i, @as(i32, @intCast(y)) + j);
+                            count += 1;
+                        }
+                    }
 
                     data[y * grid_size[0] + x] = this.tickFn(current_neihbors);
                 }
             }
 
             @memmove(this.data, data);
+        }
+
+        inline fn getAt(this: @This(), x: i32, y: i32) cell_type {
+            return this.data[@intCast((@mod(y, grid_size[1])) * grid_size[0] + (@mod(x, grid_size[0])))];
+        }
+
+        
+        inline fn setAt(this: @This(), x: i32, y: i32, new: cell_type) void {
+            this.data[@intCast((@mod(y, grid_size[1])) * grid_size[0] + (@mod(x, grid_size[0])))] = new;
         }
     };
 }
