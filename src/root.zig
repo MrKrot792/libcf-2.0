@@ -54,7 +54,7 @@ pub fn grid(comptime grid_size: vec2, comptime cell_type: type) type {
         }
 
         /// You must render the grid before drawing it inside `rl.beginDrawing`
-        pub fn renderGrid(this: *@This(), position: vec2) !void {
+        pub fn renderGrid(this: *@This()) !void {
             this.texture.begin();
             defer this.texture.end();
             
@@ -70,8 +70,8 @@ pub fn grid(comptime grid_size: vec2, comptime cell_type: type) type {
                     
                     // Current cell
                     rl.drawRectangle(
-                        position[0] + square_size_x * x,  // Position X
-                        position[1] + square_size_y * y,  // Position Y
+                        square_size_x * x,  // Position X
+                        square_size_y * y,  // Position Y
                         square_size_x, // Width 
                         square_size_y, // Height
                         this.drawFn(this.data[y_u * @as(usize, grid_size[0]) + x_u])   // Color (we get it from a user-defined function)

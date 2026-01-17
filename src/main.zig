@@ -59,7 +59,7 @@ pub fn main() !void {
 
         std.debug.print("Rendering the grid...\n", .{});
         timer.reset();
-        try grid.renderGrid(position);
+        try grid.renderGrid();
         std.debug.print("Done rendering the grid, took: {D}\n", .{timer.read()});
 
         rl.beginDrawing();
