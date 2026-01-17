@@ -18,6 +18,8 @@ pub fn grid(comptime grid_size: vec2, comptime cell_type: type) type {
         tickFn: *const fn ([9]?cell_type) cell_type,
         /// For internal use only.
         drawFn: *const fn (cell_type) rl.Color,
+        /// For internal use only.
+        fillFn: *const fn (vec2, std.Random) cell_type,
 
         /// Size of the whole texture
         textureSize: vec2,
@@ -30,11 +32,12 @@ pub fn grid(comptime grid_size: vec2, comptime cell_type: type) type {
             allocator: std.mem.Allocator,
             tickFn: *const fn ([9]?cell_type) cell_type,
             drawFn: *const fn (cell_type) rl.Color,
+            fillFn: *const fn (vec2, std.Random) cell_type,
             size: vec2,
         ) !@This() {
             return .{ 
                 .data = try allocator.alloc(cell_type, grid_size[0] * grid_size[1]),
-                .tickFn = tickFn, .drawFn = drawFn,
+                .tickFn = tickFn, .drawFn = drawFn, .fillFn = fillFn,
                 .textureSize = size,
                 .texture = try rl.loadRenderTexture(size[0], size[1]),
             };
@@ -110,10 +113,20 @@ pub fn grid(comptime grid_size: vec2, comptime cell_type: type) type {
             @memmove(this.data, data);
         }
 
+        /// Call this before the main loop, as it sets all the pixel
+        /// This function is using DefaultPrng, you can set the seed if you want to, but `null` defaults to time based seed.
+        pub fn fill(this: *@This(), seed: ?u64) void {
+            var random = std.Random.DefaultPrng.init(seed orelse @bitCast(std.time.microTimestamp()));
+            for (0..grid_size[1]) |y| {
+                for (0..grid_size[0]) |x| {
+                    this.setAt(@intCast(x), @intCast(y), this.fillFn(.{@intCast(x), @intCast(y)}, random.random()));
+                }
+            }
+        }
+
         inline fn getAt(this: @This(), x: i32, y: i32) cell_type {
             return this.data[@intCast((@mod(y, grid_size[1])) * grid_size[0] + (@mod(x, grid_size[0])))];
         }
-
         
         inline fn setAt(this: @This(), x: i32, y: i32, new: cell_type) void {
             this.data[@intCast((@mod(y, grid_size[1])) * grid_size[0] + (@mod(x, grid_size[0])))] = new;

@@ -11,6 +11,8 @@ pub fn tick(previous: [9]?state) state {
         if( value orelse false ) neighbors += 1; 
     }
 
+    if (neighbors == 0) return false;
+
     if (previous[4].?) neighbors -= 1;
 
     if (previous[4].?) {
@@ -25,19 +27,23 @@ pub fn drawAs(cell: state) rl.Color {
     else return rl.Color.black;
 }
 
+pub fn fill(pos: lcf.vec2, random: std.Random) state {
+    _ = pos;
+    return random.boolean();
+}
+
 const position: lcf.vec2 = .{0, 0};
 
 pub fn main() !void {
     const allocator = std.heap.smp_allocator;
-    rl.initWindow(800, 800, "libCF test");
+    rl.setConfigFlags(.{ .window_maximized = true });
+    rl.initWindow(1920, 1080, "libCF test");
 
     // Cellular automaton initialization
-    var grid: lcf.grid(.{400, 400}, state) = try .init(allocator, tick, drawAs, .{800, 800});
+    var grid: lcf.grid(.{480*2, 270*2}, state) = try .init(allocator, tick, drawAs, fill, .{1920, 1080});
     defer grid.deinit(allocator);
-
-    // Filling the grid with random values
-    var random = std.Random.DefaultPrng.init(@bitCast(std.time.microTimestamp()));
-    for (grid.data) |*value| { value.* = random.random().boolean(); }
+    // Filing the grid with a predefined function
+    grid.fill(null);
 
     var frame: u64 = 0;
     rl.setTargetFPS(60);
@@ -45,10 +51,19 @@ pub fn main() !void {
     var timer: std.time.Timer = try .start();
     var frameTimer: std.time.Timer = try .start();
 
+    var camera: rl.Camera2D = .{ .offset = .init(1920/2, 1080/2), .rotation = 0, .target = .init(0, 0), .zoom = 1 };
+
+    const move_speed: f32 = 200;
+
     while (!rl.windowShouldClose()) {
         frameTimer.reset();
-        if (rl.isKeyPressed(.r)) { for (grid.data) |*value| { value.* = random.random().boolean(); } }
-        //if (rl.isWindowResized()) try grid.resize(.{rl.getRenderWidth(), rl.getRenderHeight()});
+        if (rl.isKeyPressed(.r)) grid.fill(null);
+        if (rl.isKeyDown(.left))  camera.target.x -= move_speed * rl.getFrameTime();
+        if (rl.isKeyDown(.right)) camera.target.x += move_speed * rl.getFrameTime();
+        if (rl.isKeyDown(.down))  camera.target.y += move_speed * rl.getFrameTime();
+        if (rl.isKeyDown(.up))    camera.target.y -= move_speed * rl.getFrameTime();
+        if (rl.isKeyDown(.a))     camera.zoom += camera.zoom / 5;
+        if (rl.isKeyDown(.d))     camera.zoom -= camera.zoom / 5;
 
         std.debug.print("-----\nFrame: {d}\n", .{frame});
 
@@ -63,14 +78,14 @@ pub fn main() !void {
         std.debug.print("Done rendering the grid, took: {D}\n", .{timer.read()});
 
         rl.beginDrawing();
-        rl.clearBackground(.black);
-
-            std.debug.print("Drawing...\n", .{});
-            timer.reset();
-            try grid.draw(position);
-            std.debug.print("Done drawing, took: {D}\n", .{timer.read()});
-
-        rl.drawFPS(0, 0);
+            rl.beginMode2D(camera);
+                rl.clearBackground(.black);
+                std.debug.print("Drawing...\n", .{});
+                timer.reset();
+                try grid.draw(position);
+                std.debug.print("Done drawing, took: {D}\n", .{timer.read()});
+            rl.endMode2D();
+            rl.drawFPS(0, 0);
         rl.endDrawing();
         frame += 1;
 
