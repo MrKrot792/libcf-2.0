@@ -14,14 +14,13 @@ pub fn grid(comptime grid_size: vec2, comptime cell_type: type) type {
         /// Pointer to the grid of cells
         data: []cell_type,
 
-        /// Size of the whole texture
-        textureSize: vec2,
-
         /// For internal use only.
         tickFn: *const fn ([9]?cell_type) cell_type,
         /// For internal use only.
         drawFn: *const fn (cell_type) rl.Color,
 
+        /// Size of the whole texture
+        textureSize: vec2,
         /// The grid texture
         texture: rl.RenderTexture,
         
@@ -39,6 +38,12 @@ pub fn grid(comptime grid_size: vec2, comptime cell_type: type) type {
                 .textureSize = size,
                 .texture = try rl.loadRenderTexture(size[0], size[1]),
             };
+        }
+
+        pub fn resize(this: *@This(), new_size: vec2) !void {
+            this.texture.unload();
+            this.texture = try rl.loadRenderTexture(new_size[0], new_size[1]);
+            this.textureSize = new_size;
         }
 
         /// Call this after using the object

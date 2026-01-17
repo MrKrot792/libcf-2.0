@@ -26,12 +26,11 @@ pub fn drawAs(cell: state) rl.Color {
 }
 
 pub fn main() !void {
-
     const allocator = std.heap.smp_allocator;
     rl.initWindow(800, 800, "libCF test");
 
     // Cellular automaton initialization
-    var grid: lcf.grid(.{800, 800}, state) = try .init(allocator, tick, drawAs, .{800, 800});
+    var grid: lcf.grid(.{400, 400}, state) = try .init(allocator, tick, drawAs, .{800, 800});
     defer grid.deinit(allocator);
 
     // Filling the grid with random values
@@ -44,6 +43,8 @@ pub fn main() !void {
     const position: lcf.vec2 = .{0, 0};
 
     while (!rl.windowShouldClose()) {
+        if (rl.isKeyPressed(.r)) { for (grid.data) |*value| { value.* = random.random().boolean(); } }
+        //if (rl.isWindowResized()) try grid.resize(.{rl.getRenderWidth(), rl.getRenderHeight()});
 
         try grid.tick(allocator);
         try grid.renderGrid(position);
@@ -55,7 +56,6 @@ pub fn main() !void {
         try grid.draw(position);
 
         rl.drawFPS(0, 0);
-        if (rl.isKeyPressed(.r)) { for (grid.data) |*value| { value.* = random.random().boolean(); } }
         rl.endDrawing();
 
         frame += 1;
