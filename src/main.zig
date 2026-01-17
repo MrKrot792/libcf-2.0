@@ -63,7 +63,7 @@ pub fn main() !void {
         std.debug.print("Done rendering the grid, took: {D}\n", .{timer.read()});
 
         rl.beginDrawing();
-        rl.clearBackground(.ray_white);
+        rl.clearBackground(.black);
 
             std.debug.print("Drawing...\n", .{});
             timer.reset();

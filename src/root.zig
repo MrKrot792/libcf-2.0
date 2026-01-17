@@ -40,6 +40,7 @@ pub fn grid(comptime grid_size: vec2, comptime cell_type: type) type {
             };
         }
 
+        /// The new size should be divisible by grid_size. If it's not, it'll look ugly.
         pub fn resize(this: *@This(), new_size: vec2) !void {
             this.texture.unload();
             this.texture = try rl.loadRenderTexture(new_size[0], new_size[1]);
@@ -52,9 +53,7 @@ pub fn grid(comptime grid_size: vec2, comptime cell_type: type) type {
             this.texture.unload();
         }
 
-        /// THIS SHOULD BE CALLED OUTSIDE OF THE `rl.beginDrawing`!!
-        /// IF YOU CALL THIS INSIDE OF `rl.beginDrawing`, IT WILL BREAK AND WON'T WORK!!!
-        /// BTW, `where.dimensions` is absolute 
+        /// You must render the grid before drawing it inside `rl.beginDrawing`
         pub fn renderGrid(this: *@This(), position: vec2) !void {
             this.texture.begin();
             defer this.texture.end();
@@ -81,14 +80,13 @@ pub fn grid(comptime grid_size: vec2, comptime cell_type: type) type {
             }
         }
 
-        /// This must be called _INSIDE_ `rl.beginDrawing`!!!
-        /// BTW, `where.dimensions` is absolute 
+        /// Call this _INSIDE_ `rl.beginDrawing`.
         pub fn draw(this: *@This(), position: vec2) !void {
             std.debug.print("Drawing texture!\n", .{}); 
             this.texture.texture.draw(position[0], position[1], .white); 
         }
 
-        /// Hopefully this works 🙏
+        /// This function is really heavy.
         pub fn tick(this: *@This(), allocator: std.mem.Allocator) !void {
             var data: []cell_type = try allocator.alloc(cell_type, grid_size[0] * grid_size[1]);
             defer allocator.free(data);
