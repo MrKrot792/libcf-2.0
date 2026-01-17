@@ -1,62 +1,86 @@
 const std = @import("std");
 const rl = @import("raylib");
 
-const vec2 = [2]i32;
+pub const vec2 = [2]i32;
 
 const square: type = struct {
     position: vec2,
     dimensions: vec2,
 };
 
+/// Grid size must be divisible by the rendered texture size
 pub fn grid(comptime grid_size: vec2, comptime cell_type: type) type {
     return struct {
         /// Pointer to the grid of cells
         data: []cell_type,
 
+        /// Size of the whole texture
+        textureSize: vec2,
+
         /// For internal use only.
         tickFn: *const fn ([9]?cell_type) cell_type,
         /// For internal use only.
         drawFn: *const fn (cell_type) rl.Color,
+
+        /// The grid texture
+        texture: rl.RenderTexture,
         
-        /// You always gotta call `deinit()`.
+        /// You always gotta call `deinit()` when you stop using this lib.
         /// BTW, fourth element of the first argument in `tickFn` is always available (.? is always safe to use)
         pub fn init(
             allocator: std.mem.Allocator,
             tickFn: *const fn ([9]?cell_type) cell_type,
-            drawFn: *const fn (cell_type) rl.Color
+            drawFn: *const fn (cell_type) rl.Color,
+            size: vec2,
         ) !@This() {
             return .{ 
                 .data = try allocator.alloc(cell_type, grid_size[0] * grid_size[1]),
-                .tickFn = tickFn, .drawFn = drawFn
+                .tickFn = tickFn, .drawFn = drawFn,
+                .textureSize = size,
+                .texture = try rl.loadRenderTexture(size[0], size[1]),
             };
         }
 
         /// Call this after using the object
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
             allocator.free(this.data);
+            this.texture.unload();
         }
 
-        /// You gotta call ts in a loop btw
+        /// THIS SHOULD BE CALLED OUTSIDE OF THE `rl.beginDrawing`!!
+        /// IF YOU CALL THIS INSIDE OF `rl.beginDrawing`, IT WILL BREAK AND WON'T WORK!!!
         /// BTW, `where.dimensions` is absolute 
-        pub fn draw(this: @This(), where: square) void {
+        pub fn renderGrid(this: *@This(), position: vec2) !void {
+            this.texture.begin();
+            defer this.texture.end();
+            
+            rl.clearBackground(.black);
+
             for (0..grid_size[1]) |y_u| {
                 for (0..grid_size[0]) |x_u| {
                     const y: i32 = @intCast(y_u);
                     const x: i32 = @intCast(x_u);
                     
-                    const square_size_x = @divFloor(where.dimensions[0], grid_size[0]);
-                    const square_size_y = @divFloor(where.dimensions[1], grid_size[1]);
+                    const square_size_x = @divFloor(this.textureSize[0], grid_size[0]);
+                    const square_size_y = @divFloor(this.textureSize[1], grid_size[1]);
                     
                     // Current cell
                     rl.drawRectangle(
-                        where.position[0] + square_size_x * x,  // Position X
-                        where.position[1] + square_size_y * y,  // Position Y
-                        square_size_x, // Width
+                        position[0] + square_size_x * x,  // Position X
+                        position[1] + square_size_y * y,  // Position Y
+                        square_size_x, // Width 
                         square_size_y, // Height
                         this.drawFn(this.data[y_u * @as(usize, grid_size[0]) + x_u])   // Color (we get it from a user-defined function)
                     );
                 }
             }
+        }
+
+        /// This must be called _INSIDE_ `rl.beginDrawing`!!!
+        /// BTW, `where.dimensions` is absolute 
+        pub fn draw(this: *@This(), position: vec2) !void {
+            std.debug.print("Drawing texture!\n", .{}); 
+            this.texture.texture.draw(position[0], position[1], .white); 
         }
 
         /// Hopefully this works 🙏

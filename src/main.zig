@@ -31,7 +31,7 @@ pub fn main() !void {
     rl.initWindow(800, 800, "libCF test");
 
     // Cellular automaton initialization
-    var grid: lcf.grid(.{800, 800}, state) = try .init(allocator, tick, drawAs);
+    var grid: lcf.grid(.{800, 800}, state) = try .init(allocator, tick, drawAs, .{800, 800});
     defer grid.deinit(allocator);
 
     // Filling the grid with random values
@@ -41,23 +41,21 @@ pub fn main() !void {
     var frame: u64 = 0;
     rl.setTargetFPS(60);
 
+    const position: lcf.vec2 = .{0, 0};
+
     while (!rl.windowShouldClose()) {
+
+        try grid.tick(allocator);
+        try grid.renderGrid(position);
+
         rl.beginDrawing();
         rl.clearBackground(.ray_white);
-
         std.debug.print("Ticking... x{d}\n", .{frame});
-        
-        try grid.tick(allocator); 
 
-        grid.draw(.{ 
-            .position = .{0, 0}, 
-            .dimensions = .{800, 800}
-        });
+        try grid.draw(position);
 
         rl.drawFPS(0, 0);
-
         if (rl.isKeyPressed(.r)) { for (grid.data) |*value| { value.* = random.random().boolean(); } }
-
         rl.endDrawing();
 
         frame += 1;
