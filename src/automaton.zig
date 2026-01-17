@@ -4,16 +4,16 @@ const lcf = @import("root.zig");
 
 pub const state = bool;
 
-pub fn tick(previous: [9]?state) state {
+pub fn tick(previous: [9]state) state {
     var neighbors: u32 = 0;
 
     for (previous) |value| { 
-        if( value orelse false ) neighbors += 1; 
+        if(value) neighbors += 1; 
     }
 
-    if (previous[4].?) neighbors -= 1;
+    if (previous[4]) neighbors -= 1;
 
-    if (previous[4].?) {
+    if (previous[4]) {
         return (neighbors == 2 or neighbors == 3);
     } else {
         return neighbors == 3;

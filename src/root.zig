@@ -17,7 +17,7 @@ pub fn grid(comptime grid_size: vec2, comptime cell_type: type) type {
         dataBack: []cell_type,
 
         /// For internal use only.
-        tickFn: *const fn ([9]?cell_type) cell_type,
+        tickFn: *const fn ([9]cell_type) cell_type,
         /// For internal use only.
         drawFn: *const fn (cell_type) rl.Color,
         /// For internal use only.
@@ -35,7 +35,7 @@ pub fn grid(comptime grid_size: vec2, comptime cell_type: type) type {
         /// BTW, fourth element of the first argument in `tickFn` is always available (.? is always safe to use)
         pub fn init(
             allocator: std.mem.Allocator,
-            tickFn: *const fn ([9]?cell_type) cell_type,
+            tickFn: *const fn ([9]cell_type) cell_type,
             drawFn: *const fn (cell_type) rl.Color,
             fillFn: *const fn (vec2, std.Random) cell_type,
             size: vec2,
@@ -109,7 +109,7 @@ pub fn grid(comptime grid_size: vec2, comptime cell_type: type) type {
         pub fn tick(this: *@This()) !void {
             for (0..grid_size[1]) |y| {
                 for (0..grid_size[0]) |x| {
-                    var current_neihbors: [9]?cell_type = @splat(null);
+                    var current_neihbors: [9]cell_type = undefined;
 
                     var count: u32 = 0;
                     inline for ([_]i32{-1, 0, 1}) |i| {
