@@ -19,7 +19,7 @@ pub fn main() !void {
     grid.fill(null);
 
     var frame: u64 = 0;
-    //rl.setTargetFPS(20);
+    rl.setTargetFPS(60);
 
     var timer: std.time.Timer = try .start();
     var frameTimer: std.time.Timer = try .start();

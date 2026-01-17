@@ -11,8 +11,6 @@ pub fn tick(previous: [9]?state) state {
         if( value orelse false ) neighbors += 1; 
     }
 
-    if (neighbors == 0) return false;
-
     if (previous[4].?) neighbors -= 1;
 
     if (previous[4].?) {
