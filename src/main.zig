@@ -40,7 +40,7 @@ pub fn main() !void {
     rl.initWindow(1920, 1080, "libCF test");
 
     // Cellular automaton initialization
-    var grid: lcf.grid(.{480*2, 270*2}, state) = try .init(allocator, tick, drawAs, fill, .{1920, 1080});
+    var grid: lcf.grid(.{480, 270}, state) = try .init(allocator, tick, drawAs, fill, .{1920, 1080});
     defer grid.deinit(allocator);
     // Filing the grid with a predefined function
     grid.fill(null);
@@ -58,10 +58,10 @@ pub fn main() !void {
     while (!rl.windowShouldClose()) {
         frameTimer.reset();
         if (rl.isKeyPressed(.r)) grid.fill(null);
-        if (rl.isKeyDown(.left))  camera.target.x -= move_speed * rl.getFrameTime();
-        if (rl.isKeyDown(.right)) camera.target.x += move_speed * rl.getFrameTime();
-        if (rl.isKeyDown(.down))  camera.target.y += move_speed * rl.getFrameTime();
-        if (rl.isKeyDown(.up))    camera.target.y -= move_speed * rl.getFrameTime();
+        if (rl.isKeyDown(.left))  camera.target.x -= move_speed / camera.zoom * rl.getFrameTime();
+        if (rl.isKeyDown(.right)) camera.target.x += move_speed / camera.zoom * rl.getFrameTime();
+        if (rl.isKeyDown(.down))  camera.target.y += move_speed / camera.zoom * rl.getFrameTime();
+        if (rl.isKeyDown(.up))    camera.target.y -= move_speed / camera.zoom * rl.getFrameTime();
         if (rl.isKeyDown(.a))     camera.zoom += camera.zoom / 5;
         if (rl.isKeyDown(.d))     camera.zoom -= camera.zoom / 5;
 
