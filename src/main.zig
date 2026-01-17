@@ -1,36 +1,7 @@
 const std = @import("std");
 const lcf = @import("root.zig");
 const rl = @import("raylib");
-
-const state = bool;
-
-pub fn tick(previous: [9]?state) state {
-    var neighbors: u32 = 0;
-
-    for (previous) |value| { 
-        if( value orelse false ) neighbors += 1; 
-    }
-
-    if (neighbors == 0) return false;
-
-    if (previous[4].?) neighbors -= 1;
-
-    if (previous[4].?) {
-        return (neighbors == 2 or neighbors == 3);
-    } else {
-        return neighbors == 3;
-    }
-}
-
-pub fn drawAs(cell: state) rl.Color {
-    if (cell) return rl.Color.red
-    else return rl.Color.black;
-}
-
-pub fn fill(pos: lcf.vec2, random: std.Random) state {
-    _ = pos;
-    return random.boolean();
-}
+const at = @import("automaton.zig");
 
 const position: lcf.vec2 = .{0, 0};
 
@@ -40,7 +11,7 @@ pub fn main() !void {
     rl.initWindow(1920, 1080, "libCF test");
 
     // Cellular automaton initialization
-    var grid: lcf.grid(.{480, 270}, state) = try .init(allocator, tick, drawAs, fill, .{1920, 1080});
+    var grid: lcf.grid(.{480, 270}, at.state) = try .init(allocator, at.tick, at.drawAs, at.fill, .{1920, 1080});
     defer grid.deinit(allocator);
     // Filing the grid with a predefined function
     grid.fill(null);
