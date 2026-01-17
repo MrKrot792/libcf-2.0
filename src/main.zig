@@ -25,6 +25,8 @@ pub fn drawAs(cell: state) rl.Color {
     else return rl.Color.black;
 }
 
+const position: lcf.vec2 = .{0, 0};
+
 pub fn main() !void {
     const allocator = std.heap.smp_allocator;
     rl.initWindow(800, 800, "libCF test");
@@ -40,24 +42,38 @@ pub fn main() !void {
     var frame: u64 = 0;
     rl.setTargetFPS(60);
 
-    const position: lcf.vec2 = .{0, 0};
+    var timer: std.time.Timer = try .start();
+    var frameTimer: std.time.Timer = try .start();
 
     while (!rl.windowShouldClose()) {
+        frameTimer.reset();
         if (rl.isKeyPressed(.r)) { for (grid.data) |*value| { value.* = random.random().boolean(); } }
         //if (rl.isWindowResized()) try grid.resize(.{rl.getRenderWidth(), rl.getRenderHeight()});
 
+        std.debug.print("-----\nFrame: {d}\n", .{frame});
+
+        std.debug.print("Ticking...\n", .{});
+        timer.reset();
         try grid.tick(allocator);
+        std.debug.print("Done ticking, took: {D}\n", .{timer.read()});
+
+        std.debug.print("Rendering the grid...\n", .{});
+        timer.reset();
         try grid.renderGrid(position);
+        std.debug.print("Done rendering the grid, took: {D}\n", .{timer.read()});
 
         rl.beginDrawing();
         rl.clearBackground(.ray_white);
-        std.debug.print("Ticking... x{d}\n", .{frame});
 
-        try grid.draw(position);
+            std.debug.print("Drawing...\n", .{});
+            timer.reset();
+            try grid.draw(position);
+            std.debug.print("Done drawing, took: {D}\n", .{timer.read()});
 
         rl.drawFPS(0, 0);
         rl.endDrawing();
-
         frame += 1;
+
+        std.debug.print("The whole frame took {D}.\n", .{frameTimer.lap()});
     }
 }
