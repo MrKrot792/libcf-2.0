@@ -13,9 +13,11 @@ pub fn grid(comptime grid_size: vec2, comptime cell_type: type) type {
     return struct {
         /// Pointer to the grid of cells
         data: []cell_type,
+        /// Hidden data pointer, we write to it and then we swap the `data` and `dataBack`
+        dataBack: []cell_type,
 
         /// For internal use only.
-        tickFn: *const fn ([9]?cell_type) cell_type,
+        tickFn: *const fn ([9]cell_type) cell_type,
         /// For internal use only.
         drawFn: *const fn (cell_type) rl.Color,
         /// For internal use only.
@@ -24,23 +26,32 @@ pub fn grid(comptime grid_size: vec2, comptime cell_type: type) type {
         /// Size of the whole texture
         textureSize: vec2,
         /// The grid texture
-        texture: rl.RenderTexture,
+        texture: rl.Texture,
+
+        /// CPU image, we first draw pixels to it, then turn it to a texture, then draw the texture
+        image: rl.Image,
         
         /// You always gotta call `deinit()` when you stop using this lib.
         /// BTW, fourth element of the first argument in `tickFn` is always available (.? is always safe to use)
         pub fn init(
             allocator: std.mem.Allocator,
-            tickFn: *const fn ([9]?cell_type) cell_type,
+            tickFn: *const fn ([9]cell_type) cell_type,
             drawFn: *const fn (cell_type) rl.Color,
             fillFn: *const fn (vec2, std.Random) cell_type,
             size: vec2,
         ) !@This() {
-            return .{ 
+            var result: @This() = .{ 
                 .data = try allocator.alloc(cell_type, grid_size[0] * grid_size[1]),
+                .dataBack = try allocator.alloc(cell_type, grid_size[0] * grid_size[1]),
                 .tickFn = tickFn, .drawFn = drawFn, .fillFn = fillFn,
                 .textureSize = size,
-                .texture = try rl.loadRenderTexture(size[0], size[1]),
+                .texture = undefined,
+                .image = .genColor(size[0], size[1], .black),
             };
+
+            result.texture = try .fromImage(result.image);
+
+            return result;
         }
 
         /// The new size should be divisible by grid_size. If it's not, it'll look ugly.
@@ -53,26 +64,26 @@ pub fn grid(comptime grid_size: vec2, comptime cell_type: type) type {
         /// Call this after using the object
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
             allocator.free(this.data);
+            allocator.free(this.dataBack);
             this.texture.unload();
+            this.image.unload();
         }
 
         /// You must render the grid before drawing it inside `rl.beginDrawing`
         pub fn renderGrid(this: *@This()) !void {
-            this.texture.begin();
-            defer this.texture.end();
-            
-            rl.clearBackground(.black);
+            var timer: std.time.Timer = try .start();
 
+            const square_size_x = @divFloor(this.textureSize[0], grid_size[0]);
+            const square_size_y = @divFloor(this.textureSize[1], grid_size[1]);
+            std.debug.print("   Other things took: {D}\n", .{timer.lap()});
+
+            timer.reset();
             for (0..grid_size[1]) |y_u| {
                 for (0..grid_size[0]) |x_u| {
                     const y: i32 = @intCast(y_u);
                     const x: i32 = @intCast(x_u);
-                    
-                    const square_size_x = @divFloor(this.textureSize[0], grid_size[0]);
-                    const square_size_y = @divFloor(this.textureSize[1], grid_size[1]);
-                    
                     // Current cell
-                    rl.drawRectangle(
+                    this.image.drawRectangle(
                         square_size_x * x,  // Position X
                         square_size_y * y,  // Position Y
                         square_size_x, // Width 
@@ -81,22 +92,24 @@ pub fn grid(comptime grid_size: vec2, comptime cell_type: type) type {
                     );
                 }
             }
+            std.debug.print("   Rendering took: {D}.\n", .{timer.lap()});
+
+            timer.reset();
+            rl.updateTexture(this.texture, this.image.data);
+            std.debug.print("   Sending rendered texture to GPU took: {D}\n", .{timer.lap()});
         }
 
         /// Call this _INSIDE_ `rl.beginDrawing`.
         pub fn draw(this: *@This(), position: vec2) !void {
             std.debug.print("Drawing texture!\n", .{}); 
-            this.texture.texture.draw(position[0], position[1], .white); 
+            this.texture.draw(position[0], position[1], .white); 
         }
 
         /// This function is really heavy.
-        pub fn tick(this: *@This(), allocator: std.mem.Allocator) !void {
-            var data: []cell_type = try allocator.alloc(cell_type, grid_size[0] * grid_size[1]);
-            defer allocator.free(data);
-
+        pub fn tick(this: *@This()) !void {
             for (0..grid_size[1]) |y| {
                 for (0..grid_size[0]) |x| {
-                    var current_neihbors: [9]?cell_type = @splat(null);
+                    var current_neihbors: [9]cell_type = undefined;
 
                     var count: u32 = 0;
                     inline for ([_]i32{-1, 0, 1}) |i| {
@@ -106,11 +119,11 @@ pub fn grid(comptime grid_size: vec2, comptime cell_type: type) type {
                         }
                     }
 
-                    data[y * grid_size[0] + x] = this.tickFn(current_neihbors);
+                    this.dataBack[y * grid_size[0] + x] = this.tickFn(current_neihbors);
                 }
             }
 
-            @memmove(this.data, data);
+            @memmove(this.data, this.dataBack);
         }
 
         /// Call this before the main loop, as it sets all the pixel
