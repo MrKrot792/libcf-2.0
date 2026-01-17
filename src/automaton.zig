@@ -1,6 +1,6 @@
 const std = @import("std");
 const rl = @import("raylib");
-const lcf = @import("lcf");
+const lcf = @import("root.zig");
 
 pub const state = bool;
 
