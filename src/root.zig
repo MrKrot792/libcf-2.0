@@ -13,6 +13,8 @@ pub fn grid(comptime grid_size: vec2, comptime cell_type: type) type {
     return struct {
         /// Pointer to the grid of cells
         data: []cell_type,
+        /// Hidden data pointer, we write to it and then we swap the `data` and `dataBack`
+        dataBack: []cell_type,
 
         /// For internal use only.
         tickFn: *const fn ([9]?cell_type) cell_type,
@@ -37,6 +39,7 @@ pub fn grid(comptime grid_size: vec2, comptime cell_type: type) type {
         ) !@This() {
             return .{ 
                 .data = try allocator.alloc(cell_type, grid_size[0] * grid_size[1]),
+                .dataBack = try allocator.alloc(cell_type, grid_size[0] * grid_size[1]),
                 .tickFn = tickFn, .drawFn = drawFn, .fillFn = fillFn,
                 .textureSize = size,
                 .texture = try rl.loadRenderTexture(size[0], size[1]),
@@ -53,6 +56,7 @@ pub fn grid(comptime grid_size: vec2, comptime cell_type: type) type {
         /// Call this after using the object
         pub fn deinit(this: *@This(), allocator: std.mem.Allocator) void {
             allocator.free(this.data);
+            allocator.free(this.dataBack);
             this.texture.unload();
         }
 
@@ -90,10 +94,7 @@ pub fn grid(comptime grid_size: vec2, comptime cell_type: type) type {
         }
 
         /// This function is really heavy.
-        pub fn tick(this: *@This(), allocator: std.mem.Allocator) !void {
-            var data: []cell_type = try allocator.alloc(cell_type, grid_size[0] * grid_size[1]);
-            defer allocator.free(data);
-
+        pub fn tick(this: *@This()) !void {
             for (0..grid_size[1]) |y| {
                 for (0..grid_size[0]) |x| {
                     var current_neihbors: [9]?cell_type = @splat(null);
@@ -106,11 +107,11 @@ pub fn grid(comptime grid_size: vec2, comptime cell_type: type) type {
                         }
                     }
 
-                    data[y * grid_size[0] + x] = this.tickFn(current_neihbors);
+                    this.dataBack[y * grid_size[0] + x] = this.tickFn(current_neihbors);
                 }
             }
 
-            @memmove(this.data, data);
+            @memmove(this.data, this.dataBack);
         }
 
         /// Call this before the main loop, as it sets all the pixel
