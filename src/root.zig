@@ -1,5 +1,6 @@
 const std = @import("std");
 const rl = @import("raylib");
+const log = @import("log.zig");
 
 pub const vec2 = [2]i32;
 
@@ -75,7 +76,7 @@ pub fn grid(comptime grid_size: vec2, comptime cell_type: type) type {
 
             const square_size_x = @divFloor(this.textureSize[0], grid_size[0]);
             const square_size_y = @divFloor(this.textureSize[1], grid_size[1]);
-            std.debug.print("   Other things took: {D}\n", .{timer.lap()});
+            log.log("   Other things took: {D}\n", .{timer.lap()});
 
             timer.reset();
             for (0..grid_size[1]) |y_u| {
@@ -92,16 +93,16 @@ pub fn grid(comptime grid_size: vec2, comptime cell_type: type) type {
                     );
                 }
             }
-            std.debug.print("   Rendering took: {D}.\n", .{timer.lap()});
+            log.log("   Rendering took: {D}.\n", .{timer.lap()});
 
             timer.reset();
             rl.updateTexture(this.texture, this.image.data);
-            std.debug.print("   Sending rendered texture to GPU took: {D}\n", .{timer.lap()});
+            log.log("   Sending rendered texture to GPU took: {D}\n", .{timer.lap()});
         }
 
         /// Call this _INSIDE_ `rl.beginDrawing`.
         pub fn draw(this: *@This(), position: vec2) !void {
-            std.debug.print("Drawing texture!\n", .{}); 
+            log.log("Drawing texture!\n", .{}); 
             this.texture.draw(position[0], position[1], .white); 
         }
 

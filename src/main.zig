@@ -2,6 +2,7 @@ const std = @import("std");
 const lcf = @import("root.zig");
 const rl = @import("raylib");
 const at = @import("automaton.zig");
+const log = @import("log.zig");
 
 const position: lcf.vec2 = .{0, 0};
 
@@ -44,27 +45,27 @@ pub fn main() !void {
             if (rl.isKeyDown(.d))     camera.zoom -= camera.zoom / 5;
         }
 
-        std.debug.print("-----\nFrame: {d}\n", .{frame});
+        log.log("-----\nFrame: {d}\n", .{frame});
 
-        std.debug.print("Ticking...\n", .{});
+        log.log("Ticking...\n", .{});
         timer.reset();
         try grid.tick();
-        std.debug.print("Done ticking, took: {D}\n", .{timer.read()});
+        log.log("Done ticking, took: {D}\n", .{timer.read()});
 
-        std.debug.print("Rendering the grid...\n", .{});
+        log.log("Rendering the grid...\n", .{});
         timer.reset();
         try grid.renderGrid();
-        std.debug.print("Done rendering the grid, took: {D}\n", .{timer.read()});
+        log.log("Done rendering the grid, took: {D}\n", .{timer.read()});
 
         rl.beginDrawing();
             if(shouldUseCamera) {
             rl.beginMode2D(camera);
             }
                 rl.clearBackground(.black);
-                std.debug.print("Drawing...\n", .{});
+                log.log("Drawing...\n", .{});
                 timer.reset();
                 try grid.draw(position);
-                std.debug.print("Done drawing, took: {D}\n", .{timer.read()});
+                log.log("Done drawing, took: {D}\n", .{timer.read()});
             if(shouldUseCamera) {
             rl.endMode2D();
             }
@@ -72,6 +73,6 @@ pub fn main() !void {
         rl.endDrawing();
         frame += 1;
 
-        std.debug.print("The whole frame took {D}.\n", .{frameTimer.lap()});
+        log.log("The whole frame took {D}.\n", .{frameTimer.lap()});
     }
 }
